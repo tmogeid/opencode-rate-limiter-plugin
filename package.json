@@ -1,0 +1,15 @@
+{
+    "name": "opencode-rate-limiter-plugin",
+    "version": "1.0.0",
+    "description": "Rate limiter + concurrency semaphore plugin for OpenCode",
+    "type": "module",
+    "exports": "./index.js",
+    "keywords": [
+        "opencode",
+        "plugin",
+        "rate-limiter",
+        "concurrency"
+    ],
+    "license": "MIT",
+    "author": "tmogeid"
+}
