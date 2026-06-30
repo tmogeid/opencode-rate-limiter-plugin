@@ -132,7 +132,7 @@ Get-Content "$env:TEMP\opencode-rate-limiter\rate-limiter.log" -Wait
 
 ## Compatibility
 
-- Tested with **OpenCode v1.17.11**
+- Tested with **OpenCode v1.17.11** on **Windows 11 Pro 64-bit** only
 - Works with any provider (nvidia, opencode, etc.)
 - Shared state across all open workspaces (via `globalThis`)
 - Module ESM format (`type: module`)
