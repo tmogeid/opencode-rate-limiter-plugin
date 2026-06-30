@@ -1,7 +1,7 @@
 {
     "name": "opencode-rate-limiter-plugin",
     "version": "1.0.0",
-    "description": "Rate limiter + concurrency semaphore plugin for OpenCode",
+    "description": "Experimental rate limiter + concurrency semaphore for OpenCode LLM requests",
     "type": "module",
     "exports": "./index.js",
     "keywords": [

@@ -1,24 +1,17 @@
-# ⚠️ Experimental — OpenCode Rate Limiter Plugin
+# OpenCode Rate Limiter Plugin
 
-> **Proof of concept. No further development planned.**  
-> Use at your own risk. MIT licensed — feel free to fork, adapt, or use as reference.
+> **Experimental** — Proof of concept. No further development planned.  
+> MIT licensed — feel free to fork, adapt, or use as reference.
 
-A plugin for [OpenCode](https://opencode.ai) that prevents the `ResourceExhausted: Worker local total request limit reached (X/32)` error by adding:
+A plugin for [OpenCode](https://opencode.ai) that adds **rate limiting** and a **concurrency semaphore** to LLM requests.
 
-- **Rate limiting** (sliding window per provider)
-- **Concurrency semaphore** (global, shared across all workspaces)
+## Features
 
-## The Problem
-
-OpenCode v1.17.11 (and possibly other versions) has an internal fixed limit of 32 concurrent Effect fibers. This limit is **shared across all open workspaces** — each workspace consumes fibers even when inactive.
-
-The error `ResourceExhausted: Worker local total request limit reached (X/32)` fires when total fibers across all workspaces exceed 32.
-
-OpenCode's built-in `maxConcurrency` provider option (introduced in [PR #27938](https://github.com/opencode-ai/opencode/pull/27938)) is **not available in v1.17.11**, so this plugin fills the gap.
+- **Rate limiting** — per-provider sliding window (e.g. max 1 request every 2s per provider)
+- **Concurrency semaphore** — global cap on simultaneous LLM requests across all workspaces
+- **Shared state** — survives module reloads via `globalThis`, consistent across all open workspaces
 
 ## How It Works
-
-### Architecture
 
 ```
                   chat.params hook
@@ -57,11 +50,8 @@ OpenCode's built-in `maxConcurrency` provider option (introduced in [PR #27938](
 ### 1. Copy the plugin
 
 ```bash
-# Create the plugins directory if it doesn't exist
 mkdir -p ~/.config/opencode/plugins
-
-# Copy the plugin file
-cp opencode-rate-limiter-plugin/index.js ~/.config/opencode/plugins/rate-limiter.js
+cp index.js ~/.config/opencode/plugins/rate-limiter.js
 ```
 
 Or clone directly:
@@ -76,8 +66,6 @@ cp opencode-rate-limiter-plugin/index.js ~/.config/opencode/plugins/rate-limiter
 ```bash
 echo '{"type":"module"}' > ~/.config/opencode/plugins/package.json
 ```
-
-> OpenCode scans `{plugin,plugins}/*.{js,ts}` and loads compatible modules.
 
 ### 3. Restart OpenCode
 
@@ -95,24 +83,24 @@ All settings are at the top of `index.js` inside the `CONFIG` object:
 | `requestTimeoutMs` | `15000` | Safety timeout: auto-release concurrency slot after this time |
 | `checkIntervalMs` | `200` | Polling interval for concurrency semaphore (milliseconds) |
 
-### Recommended presets
+### Presets
 
-**Conservative (safe, no errors expected):**
-```
+**Conservative:**
+```js
 maxConcurrent: 5
 maxRatePerWindow: 1
 rateWindowMs: 3000
 ```
 
 **Balanced (default):**
-```
+```js
 maxConcurrent: 15
 maxRatePerWindow: 1
 rateWindowMs: 2000
 ```
 
-**Aggressive (when you trust the LLM response times):**
-```
+**Aggressive:**
+```js
 maxConcurrent: 25
 maxRatePerWindow: 2
 rateWindowMs: 3000
@@ -125,7 +113,7 @@ Logs are written to:
 - **Windows:** `%TEMP%\opencode-rate-limiter\rate-limiter.log`
 - **Linux/macOS:** `/tmp/opencode-rate-limiter/rate-limiter.log`
 
-### Log events
+### Events
 
 | Event | Meaning |
 |-------|---------|
@@ -148,22 +136,6 @@ Get-Content "$env:TEMP\opencode-rate-limiter\rate-limiter.log" -Wait
 - Works with any provider (nvidia, opencode, etc.)
 - Shared state across all open workspaces (via `globalThis`)
 - Module ESM format (`type: module`)
-
-## The Error This Fixes
-
-```
-ResourceExhausted: Worker local total request limit reached (X/32)
-```
-
-This is an **internal OpenCode Effect fiber limit**, not an API rate limit. It occurs when too many workspaces are open or concurrent requests exceed OpenCode's internal capacity. This plugin limits the number of concurrent LLM requests, preventing the fiber pool from exhausting.
-
-### Additional mitigation
-
-If the error persists even with the plugin, **close unused workspaces** in OpenCode Desktop. Each open workspace consumes fibers even when inactive. Keeping 4-5 workspaces instead of 8-9 often resolves the issue on its own.
-
-## Why a Plugin?
-
-OpenCode's [PR #27938](https://github.com/opencode-ai/opencode/pull/27938) added `maxConcurrency` as a native provider config option to fix exactly this error. However, the feature is not available in OpenCode v1.17.11. This plugin provides the same functionality in userland until a native solution arrives.
 
 ## License
 
